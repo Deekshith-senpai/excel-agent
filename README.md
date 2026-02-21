@@ -151,3 +151,10 @@ Start command:
 
 uvicorn app.main:app --host 0.0.0.0 --port 10000
 
+Future Improvements
+
+Multi-sheet support
+
+Chunked large-file processing
+
+Human review mode
