@@ -23,7 +23,6 @@ def detect_header_row(sheet):
         if not values:
             continue
 
-        # Count text-like cells (not pure numbers)
         text_cells = [
             v for v in values
             if not v.replace(".", "").replace(",", "").isdigit()
@@ -42,8 +41,10 @@ async def parse_excel(file):
     sheet = wb.active
 
     warnings = []
+    validation_warnings = []
+    duplicates = []
 
-    # 🔥 Use SMART header detection
+    # 🔥 Smart header detection
     header_row_index = detect_header_row(sheet)
 
     if header_row_index > 0:
@@ -58,11 +59,14 @@ async def parse_excel(file):
 
     columns = [str(h).strip() for h in headers]
 
-    # 🔥 Map columns
+    # 🔥 Map columns using LLM
     mapping = map_columns_with_llm(columns)
 
     parsed_data = []
     unmapped = []
+
+    # 🔥 DUPLICATE DETECTION (COLUMN LEVEL)
+    seen_param_asset = set()
 
     for map_result in mapping:
 
@@ -73,14 +77,30 @@ async def parse_excel(file):
 
         col_index = columns.index(column_name)
 
-        # If no param mapping → unmapped column
-        if not map_result.get("param_name"):
+        param_name = map_result.get("param_name")
+        asset_name = map_result.get("asset_name")
+
+        # Unmapped column handling
+        if not param_name:
             unmapped.append({
                 "col": col_index,
                 "header": column_name,
                 "reason": "No matching parameter found"
             })
             continue
+
+        # 🔥 Duplicate detection (same param+asset in multiple columns)
+        key = (param_name, asset_name)
+
+        if key in seen_param_asset:
+            duplicates.append({
+                "param_name": param_name,
+                "asset_name": asset_name,
+                "column": column_name,
+                "reason": "Duplicate parameter+asset combination detected"
+            })
+        else:
+            seen_param_asset.add(key)
 
         # 🔥 Parse rows
         for row_index in range(header_row_index + 2, sheet.max_row + 1):
@@ -91,16 +111,36 @@ async def parse_excel(file):
             ).value
 
             if raw_value is None or str(raw_value).strip() == "":
-                continue  # skip empty rows
+                continue
 
             parsed_value = parse_value(raw_value)
+
+            # -----------------------------
+            # 🔥 VALIDATION RULES
+            # -----------------------------
+            if parsed_value is not None:
+
+                if param_name == "coal_consumption" and parsed_value < 0:
+                    validation_warnings.append(
+                        f"Row {row_index}: Negative coal consumption"
+                    )
+
+                if param_name == "steam_generation" and parsed_value < 0:
+                    validation_warnings.append(
+                        f"Row {row_index}: Negative steam generation"
+                    )
+
+                if param_name == "efficiency" and not (0 <= parsed_value <= 1):
+                    validation_warnings.append(
+                        f"Row {row_index}: Efficiency out of valid range (0-100%)"
+                    )
 
             parsed_data.append(
                 ParsedCell(
                     row=row_index,
                     col=col_index,
-                    param_name=map_result.get("param_name"),
-                    asset_name=map_result.get("asset_name"),
+                    param_name=param_name,
+                    asset_name=asset_name,
                     raw_value=str(raw_value),
                     parsed_value=parsed_value,
                     confidence=map_result.get("confidence", "medium")
@@ -112,5 +152,6 @@ async def parse_excel(file):
         "header_row": header_row_index,
         "parsed_data": parsed_data,
         "unmapped_columns": unmapped,
-        "warnings": warnings
+        "warnings": warnings + validation_warnings,
+        "duplicates": duplicates
     }
