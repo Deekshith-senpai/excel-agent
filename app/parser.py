@@ -82,6 +82,7 @@ async def parse_excel(file):
 
     warnings = []
     validation_warnings = []
+    seen_validation_issues = set()
     duplicates = []
 
     # 🔥 Smart header detection
@@ -161,7 +162,11 @@ async def parse_excel(file):
             issue = validate_value(param_name, parsed_value, row_index)
 
             if issue:
-                validation_warnings.append(issue)
+                issue_key = (issue["row"], issue["parameter"], issue["issue"])
+
+                if issue_key not in seen_validation_issues:
+                    validation_warnings.append(issue)
+                    seen_validation_issues.add(issue_key)
 
             parsed_data.append(
                 ParsedCell(
