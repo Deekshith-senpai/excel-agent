@@ -4,6 +4,46 @@ from app.llm_mapper import map_columns_with_llm
 from app.models import ParsedCell
 
 
+def validate_value(param_name, parsed_value, row_index):
+    """
+    Returns validation issue dict if invalid, else None
+    """
+
+    if parsed_value is None:
+        return None
+
+    # Rule 1: Coal consumption must be >= 0
+    if param_name == "coal_consumption":
+        if parsed_value < 0:
+            return {
+                "row": row_index,
+                "parameter": param_name,
+                "issue": "negative_value",
+                "message": "Coal consumption cannot be negative"
+            }
+
+    # Rule 2: Steam generation must be >= 0
+    if param_name == "steam_generation":
+        if parsed_value < 0:
+            return {
+                "row": row_index,
+                "parameter": param_name,
+                "issue": "negative_value",
+                "message": "Steam generation cannot be negative"
+            }
+
+    # Rule 3: Efficiency must be between 0 and 1
+    if param_name == "efficiency":
+        if not (0 <= parsed_value <= 1):
+            return {
+                "row": row_index,
+                "parameter": param_name,
+                "issue": "out_of_range",
+                "message": "Efficiency must be between 0% and 100%"
+            }
+
+    return None
+
 def detect_header_row(sheet):
     """
     Smart header detection:
@@ -118,22 +158,10 @@ async def parse_excel(file):
             # -----------------------------
             # 🔥 VALIDATION RULES
             # -----------------------------
-            if parsed_value is not None:
+            issue = validate_value(param_name, parsed_value, row_index)
 
-                if param_name == "coal_consumption" and parsed_value < 0:
-                    validation_warnings.append(
-                        f"Row {row_index}: Negative coal consumption"
-                    )
-
-                if param_name == "steam_generation" and parsed_value < 0:
-                    validation_warnings.append(
-                        f"Row {row_index}: Negative steam generation"
-                    )
-
-                if param_name == "efficiency" and not (0 <= parsed_value <= 1):
-                    validation_warnings.append(
-                        f"Row {row_index}: Efficiency out of valid range (0-100%)"
-                    )
+            if issue:
+                validation_warnings.append(issue)
 
             parsed_data.append(
                 ParsedCell(
@@ -152,6 +180,7 @@ async def parse_excel(file):
         "header_row": header_row_index,
         "parsed_data": parsed_data,
         "unmapped_columns": unmapped,
-        "warnings": warnings + validation_warnings,
+        "warnings": warnings,
+        "validation_issues": validation_warnings,
         "duplicates": duplicates
     }
