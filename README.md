@@ -9,15 +9,21 @@ https://excel-agent-s1ca.onrender.com/docs
 Setup Instruction
 
 - Clone this github Repo
-- create a virtual environment
+- create a virtual environment :
     python -m venv venv
-- Intilaize the virtualt environment
+- Intilaize the virtualt environment :
     venv\Scripts\activate
-- Run the requirements file
+- Run the requirements file :
     pip install -r requirements.txt
-- Run the server locally
+- Run the server locally :
     uvicorn app.main:app --reload
-  
+
+  Can test the API using the test data set in the test_data folder. It has 3 types of dat set :
+    - clean_data.xlsx = Clean headers, single asset, numeric values 
+    - messy_data.xlsx = Abbreviated headers, mixed formats, title rows, empty rows 
+    - multi_asset.xlsx = Column headers include asset names, multiple assets per parameter
+
+
 📌 Overview
 
 Excel Agent is a FastAPI-based backend service that:
@@ -171,4 +177,5 @@ Multi-sheet support
 Chunked large-file processing
 
 Human review mode
+
 
