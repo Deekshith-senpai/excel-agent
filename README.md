@@ -100,6 +100,7 @@ If LLM cannot map a column:
   "header": "Comments",
   "reason": "No matching parameter found"
 }
+
 🛠 API Endpoint
 POST /parse
 
@@ -115,7 +116,9 @@ Response Format
   "validation_issues": [...],
   "duplicates": [...]
 }
+
 🏗 Project Structure
+
 excel-agent/
 │
 ├── app/
@@ -147,3 +150,4 @@ Hosted on Render
 Start command:
 
 uvicorn app.main:app --host 0.0.0.0 --port 10000
+
