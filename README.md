@@ -5,6 +5,19 @@ AI-powered Excel parsing backend that converts messy spreadsheet data into clean
 🔗 Live API Docs:
 https://excel-agent-s1ca.onrender.com/docs
 
+
+Setup Instruction
+
+- Clone this github Repo
+- create a virtual environment
+    python -m venv venv
+- Intilaize the virtualt environment
+    venv\Scripts\activate
+- Run the requirements file
+    pip install -r requirements.txt
+- Run the server locally
+    uvicorn app.main:app --reload
+  
 📌 Overview
 
 Excel Agent is a FastAPI-based backend service that:
@@ -158,3 +171,4 @@ Multi-sheet support
 Chunked large-file processing
 
 Human review mode
+
