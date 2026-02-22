@@ -15,6 +15,7 @@ Setup Instruction
     venv\Scripts\activate
 - Run the requirements file :
     pip install -r requirements.txt
+- create a .env file and add groq api key credentials as GROQ_API_KEY=your key
 - Run the server locally :
     uvicorn app.main:app --reload
 
